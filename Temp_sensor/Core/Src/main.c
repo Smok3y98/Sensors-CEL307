@@ -61,6 +61,7 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// The code in User code 0 is only used to convert data to be read in a terminal emulator
 uint8_t string_compare(char array1[], char array2[], uint16_t lenght)
 {
 	 uint8_t comVAR=0, i;
@@ -238,7 +239,7 @@ int main(void)
 	 		  strcat(string, " m\r\n\n\n");
 
 	 		 // Transmits the string via UART to read data with a PuTTy(terminal emulator)
-	 		  HAL_UART_Transmit(&huart2, (uint8_t*)string, strlen((char*)string),HAL_MAX_DELAY); // Transmits the string via UART to be read with a PuTTy(terminal emulator)
+	 		  HAL_UART_Transmit(&huart2, (uint8_t*)string, strlen((char*)string),HAL_MAX_DELAY);
 	 		  HAL_Delay(1000);
   }
   /* USER CODE END 3 */
