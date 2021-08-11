@@ -67,7 +67,7 @@ void BMP280_init(void)
 	BMP280_get_calib_values();
 }
 
-void BMP280_calc_values(float* outTemperature, float *outPressure, float* outAltitude)
+void BMP280_calc_values(float* outTemperature, float *outPressure, float* outAltitude)// edited by me
 {
 	uint8_t status, rx_buff[6], starting_address=0xF7;
 
@@ -111,6 +111,7 @@ volatile	double p=1048576.0-(double)pressure_raw;
 
 
 	altitude=44330.0f*(1-powf(p/101325.0f,1.0f/5.255f));
+	// Created by me
 	if(outTemperature != NULL) // checks that the pointer has a value to return
 	{
 		*outTemperature = T;

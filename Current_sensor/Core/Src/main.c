@@ -305,7 +305,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+// Created by me
 static void INA260_Init(void)
 {
 	hina260 = ina260_new(&hi2c1, INA260_SLAVE_ADDRESS);
