@@ -22,9 +22,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "BMP280.h"
-#include <string.h>
-#include <math.h>
+#include "stdio.h"
+#include "string.h"
+#include "INA260.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,7 +47,7 @@ I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+ina260_t* hina260;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -56,115 +56,12 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void INA260_Init(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t string_compare(char array1[], char array2[], uint16_t lenght)
-{
-	 uint8_t comVAR=0, i;
-	 for(i=0;i<lenght;i++)
-	   	{
-	   		  if(array1[i]==array2[i])
-	   	  		  comVAR++;
-	   	  	  else comVAR=0;
-	   	}
-	 if (comVAR==lenght)
-		 	return 1;
-	 else 	return 0;
-}
 
-// reverses a string 'str' of length 'len'
-void reverse(char *str, int len)
-{
-    int i=0, j=len-1, temp;
-    while (i<j)
-    {
-        temp = str[i];
-        str[i] = str[j];
-        str[j] = temp;
-        i++; j--;
-    }
-}
-
-// Converts a given integer x to string str[].  d is the number
-// of digits required in output. If d is more than the number
-// of digits in x, then 0s are added at the beginning.
-int intToStr(int x, char str[], int d)
-{
-   int i = 0;
-   while (x)
-   {
-       str[i++] = (x%10) + '0';
-       x = x/10;
-   }
-
-   // If number of digits required is more, then
-   // add 0s at the beginning
-   while (i < d)
-       str[i++] = '0';
-
-   reverse(str, i);
-   str[i] = '\0';
-   return i;
-}
-
-// Converts a floating point number to string.
-void ftoa(float n, char *res, int afterpoint)
-{
-	unsigned char minus_flag = 0;
-	if(n<0)
-	{
-		minus_flag = 1;
-		n = -n;
-	}
-
-    // Extract integer part
-    int ipart = (int)n;
-
-    // Extract floating part
-    float fpart = n - (float)ipart;
-
-    // convert integer part to string
-    int i = intToStr(ipart, res, 0);
-
-    // check for display option after point
-    if (afterpoint != 0)
-    {
-        res[i] = '.';  // add dot
-
-        // Get the value of fraction part upto given no.
-        // of points after dot. The third parameter is needed
-        // to handle cases like 233.007
-        fpart = fpart * pow(10, afterpoint);
-
-        intToStr((int)fpart, res + i + 1, afterpoint);
-    }
-
-    char string[30];
-    if(minus_flag==1)
-    {
-        memset(string, 0, 30);
-        string[0]='-';
-        if(n<1.0f)
-        {
-        	string[1]='0';
-        	strcpy(&string[2], res);
-        }else
-        	strcpy(&string[1], res);
-
-        memset(res, 0, strlen(res));
-        strcpy(res, string);
-    }else
-    if(n<1.0f)
-	{
-		string[0]='0';
-		strcpy(&string[1], res);
-		memset(res, 0, strlen(res));
-		strcpy(res, string);
-	}
-}
 /* USER CODE END 0 */
 
 /**
@@ -198,48 +95,48 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  char string[200];
-  HAL_Delay(2000);
 
-     float bmp280Temperature;
-     float bmp280Pressure;
-     float bmp280Altitude;
+  INA260_Init(); // Initialises INA260 by creating pointer to a new ina260_t struct and setting the configuration
 
-     BMP280_init();// initialises the BMP280 by setting the data acquisition options and mode for the device
-     BMP280_calc_values(NULL, NULL, &bmp280Altitude); // Calculates the initial height
-     float init_height = bmp280Altitude; //sets init_height to the initial height
+    static float voltage = 0;
+    static float current = 0;
+    static float power = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  HAL_Delay(500);
+	  	  /**
+	  	    * reads the bus voltage (mV) stored in the INA260 voltage register for both
+	  	    * continuous and triggered conversions
+	  	    */
+	  	  if(ina260_conversion_ready(hina260) == HAL_OK)
+	  	  {
+	  		  ina260_get_voltage(hina260, &voltage);
+	  	  }
+	  	  /**
+	  	    * reads the current (mA) stored in the INA260 current register for both
+	  	    * continuous and triggered conversions
+	  	    */
+	  	  HAL_Delay(100);
+	  	  if(ina260_conversion_ready(hina260) == HAL_OK)
+	  	  {
+	  		  ina260_get_current(hina260, &current);
+	  	  }
+	  	  /**
+	  	    * reads the power (mW) stored in the INA260 power register for both continuous
+	  	    * and triggered conversions
+	  	    */
+	  	  HAL_Delay(100);
+	  	  if(ina260_conversion_ready(hina260) == HAL_OK)
+	  	  {
+	  		  ina260_get_power(hina260, &power);
+	  	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  BMP280_calc_values(&bmp280Temperature, &bmp280Pressure, &bmp280Altitude); // Calculates the Temperature, Pressure and Altitude
-
-	 		  memset(&string, 0, strlen(string));
-
-	 		  strcat(string, "Temperature: ");
-	 		  ftoa(bmp280Temperature, &string[strlen(string)], 3);
-	 		  strcat(string, " C\r\n");
-
-	 		  strcat(string, "Pressure: ");
-	 		  ftoa(bmp280Pressure, &string[strlen(string)], 3);
-	 		  strcat(string, " Pa\r\n");
-
-	 		  strcat(string, "Altitude: ");
-	 		  ftoa(bmp280Altitude, &string[strlen(string)], 3);
-	 		  strcat(string, " m\r\n");
-
-	 		  strcat(string, "Relative altitude: ");
-	 		  ftoa(bmp280Altitude - init_height, &string[strlen(string)], 3);
-	 		  strcat(string, " m\r\n\n\n");
-
-	 		 // Transmits the string via UART to read data with a PuTTy(terminal emulator)
-	 		  HAL_UART_Transmit(&huart2, (uint8_t*)string, strlen((char*)string),HAL_MAX_DELAY); // Transmits the string via UART to be read with a PuTTy(terminal emulator)
-	 		  HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 }
@@ -408,6 +305,22 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+static void INA260_Init(void)
+{
+	hina260 = ina260_new(&hi2c1, INA260_SLAVE_ADDRESS);
+
+	if(ina260_set_config(hina260,
+			iotPower,
+			iomTriggered,
+			ictConvert1p1ms,
+			ictConvert1p1ms,
+			issSample64
+			) != HAL_OK)
+	{
+		Error_Handler();
+	}
+}
 
 /* USER CODE END 4 */
 
